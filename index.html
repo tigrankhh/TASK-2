@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Component Architecture</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --text: #1e293b;
+            --overlay: rgba(0, 0, 0, 0.5);
+        }
+
+        body { font-family: sans-serif; color: var(--text); padding: 2rem; }
+
+        /* Dropdown Styles */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: 160px;
+            z-index: 10;
+        }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { 
+            padding: 10px; 
+            width: 100%; 
+            text-align: left; 
+            border: none; 
+            background: none; 
+            cursor: pointer; 
+        }
+        .dropdown-item:hover, .dropdown-item:focus { background: #f1f5f9; outline: 2px solid var(--primary); }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--overlay);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 400px;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dropdown">
+        <button class="btn" id="dropdownToggle" aria-haspopup="true" aria-expanded="false">
+            Services ▼
+        </button>
+        <div class="dropdown-menu" id="servicesMenu">
+            <button class="dropdown-item">Web Design</button>
+            <button class="dropdown-item">Marketing</button>
+            <button class="dropdown-item">SEO</button>
+        </div>
+    </div>
+
+    <button id="openModal" class="btn" style="margin-left: 20px;">Open Contact Modal</button>
+
+    <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <h2>Contact Us</h2>
+            <p>This modal is now bug-free and accessible.</p>
+            <button id="closeModal" class="btn">Close</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Encapsulated in an IIFE to prevent Global Variable Pollution
+         */
+        (() => {
+            const dropdownToggle = document.getElementById('dropdownToggle');
+            const servicesMenu = document.getElementById('servicesMenu');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const openModalBtn = document.getElementById('openModal');
+
+            // --- 1. Memory Leak & Event Delegation Fix ---
+            // Instead of adding new listeners inside functions, we use a single global click handler
+            document.addEventListener('click', (e) => {
+                
+                // Dropdown Toggle Logic
+                if (e.target.closest('#dropdownToggle')) {
+                    const isExpanded = servicesMenu.classList.toggle('show');
+                    dropdownToggle.setAttribute('aria-expanded', isExpanded);
+                } 
+                // Close dropdown when clicking outside
+                else if (!e.target.closest('.dropdown')) {
+                    servicesMenu.classList.remove('show');
+                    dropdownToggle.setAttribute('aria-expanded', 'false');
+                }
+
+                // Modal Open Logic
+                if (e.target.id === 'openModal') {
+                    toggleModal(true);
+                }
+
+                // --- 3. Modal Click-Through Bug Fix ---
+                // We check if the click was exactly on the overlay, not the content
+                if (e.target.id === 'modalOverlay' || e.target.id === 'closeModal') {
+                    toggleModal(false);
+                }
+            });
+
+            // --- 4. Keyboard Accessibility ---
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    toggleModal(false);
+                    servicesMenu.classList.remove('show');
+                    dropdownToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            function toggleModal(isOpen) {
+                modalOverlay.classList.toggle('active', isOpen);
+                if (isOpen) {
+                    // Focus Management: Move focus to the modal when opened
+                    modalOverlay.querySelector('button').focus();
+                } else {
+                    openModalBtn.focus();
+                }
+            }
+        })();
+    </script>
+</body>
+</html>
